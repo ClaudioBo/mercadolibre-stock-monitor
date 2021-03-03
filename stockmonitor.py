@@ -11,7 +11,7 @@ j = 5
 up = True
 
 try:
-    if(len(sys.argv) == 2):
+    if(len(sys.argv) >= 2):
         if(sys.argv[1].lower() != 'demo'):
             API_URL += sys.argv[1]
         else:
@@ -24,7 +24,10 @@ except Exception as e:
 
 precio = None
 stock_disponible = None
+status_anterior = None
 diferencia_precio = None
+
+actualizar = False
 while(True):
     now = datetime.datetime.now().strftime("%X")
 
@@ -67,27 +70,34 @@ while(True):
     #comparar precio
     precio_texto = None
     if(precio - precio_now != 0):
+        actualizar = True
         diferencia_precio = ((precio_now-precio)/precio * 100); #obtener diferencia de precio en %
+        diferencia_precio_str = "{:.2f}".format(diferencia_precio)
         if(diferencia_precio > 0):
-            precio_texto = f'{Fore.GREEN}${precio} [{diferencia_precio}% ▲]{Fore.WHITE}'
+            precio_texto = f'{Fore.RED}${precio_now} [{diferencia_precio_str}% ▲]{Fore.WHITE}'
         else:
-            precio_texto = f'{Fore.RED}${precio} [{diferencia_precio}% ▼]{Fore.WHITE}'
+            precio_texto = f'{Fore.GREEN}${precio_now} [{diferencia_precio_str}% ▼]{Fore.WHITE}'
     else:
-        precio_texto = f"${precio} [    ]"
+        precio_texto = f"${precio_now} [    ]"
     
     #comprobar estados
     status_texto = None
     status = webdata['status']
     if(status != 'paused'):
-        status_texto = f'{Fore.GREEN}{status}{Fore.WHITE}'
+        if(status_anterior != status):
+            actualizar = True
+            status_texto = f'{Fore.GREEN}{status}{Fore.WHITE}'
         playsound('sound.wav')
     else:
+        if(status_anterior != status):
+            actualizar = True
         status_texto = f'{Fore.YELLOW}{status}{Fore.WHITE}'
         pass
 
     #comprobar stock
     stock_texto = None
     if(stock_disponible - stock_disponible_now != 0):
+        actualizar = True
         diferencia_stock = stock_disponible_now - stock_disponible;
         if(diferencia_stock > 0):
             stock_texto = f'{Fore.GREEN}{stock_disponible_now} [+{diferencia_stock} ▲]{Fore.WHITE}'
@@ -95,12 +105,15 @@ while(True):
             stock_texto = f'{Fore.RED}{stock_disponible_now} [{diferencia_stock} ▼]{Fore.WHITE}'
     else:
         stock_texto = f'{stock_disponible_now} [    ]'
-
-    print(f'[{now}] {status_texto}\t | Stock: {stock_texto}\t | Precio: {precio_texto}')
+        
+    if(actualizar):
+        print(f'[{now}] {status_texto}\t | Stock: {stock_texto}\t | Precio: {precio_texto}')
+        actualizar = False
 
     #actualizar
     precio = precio_now
     stock_disponible = stock_disponible_now
+    status_anterior = status
     
     time.sleep(60)
 
